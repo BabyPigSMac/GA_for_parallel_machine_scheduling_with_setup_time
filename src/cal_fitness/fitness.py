@@ -37,8 +37,8 @@ def fitness(job, process_time, setup_time, machine_num):
                 this_completion_time += process_time[this_job - 1] + setup_time[0, this_job]
             else:
                 this_completion_time += process_time[this_job - 1] + setup_time[tmp_job[idx-1], this_job]
-            # Record completion time.
-            completion_times.append(this_completion_time)
+        # Record completion time.
+        completion_times.append(this_completion_time)
 
     # Then get max completion time.
     return 1 / max(completion_times)

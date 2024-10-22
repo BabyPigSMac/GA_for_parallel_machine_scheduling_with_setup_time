@@ -34,7 +34,7 @@ def find_min_setup_time(job, setup_time, machine_idxes, assignment_per_machine):
     return min_time_machine_idxes, time_count, min_time
 
 
-def chromosome_initialize(num_jobs, num_machines, process_time, setup_time):
+def chromosome_initialize(num_jobs, num_machines, process_time, setup_time, mode='plain'):
     """
     The function is to init chromosome with greedy assignment procedure. Returns one piece of chromosome.
     :param process_time: <np.array>, 1 * num_jobs
@@ -61,35 +61,39 @@ def chromosome_initialize(num_jobs, num_machines, process_time, setup_time):
     # Create a permutation of the n jobs
     permutation = np.arange(1, num_jobs + 1)
     np.random.shuffle(permutation)
-    completion_time = np.zeros(num_machines)   # Record of completion time.
-    assignment = np.zeros(num_jobs)     # Array for assignment of jobs, which is the second row of the return.
+
+    completion_time = np.zeros(num_machines)  # Record of completion time.
     assignment_per_machine = [[] for _ in range(num_machines)]
+    if mode == 'greedy':
+        assignment = np.zeros(num_jobs)     # Array for assignment of jobs, which is the second row of the return.
 
-    for idx, job in enumerate(permutation):
-        # Find the machine with the earliest completion time.
-        machine_idxes, time_count, min_completion_time = find_earliest_completion_time(completion_time)
-        if min_completion_time == 0:
-            # If no job in machine, just assign it to the first machine found.
-            assignment[idx] = machine_idxes[0] + 1
-            completion_time[machine_idxes[0]] += process_time[job - 1]
-            assignment_per_machine[machine_idxes[0]].append(job)
-            continue
+        for idx, job in enumerate(permutation):
+            # Find the machine with the earliest completion time.
+            machine_idxes, time_count, min_completion_time = find_earliest_completion_time(completion_time)
+            if min_completion_time == 0:
+                # If no job in machine, just assign it to the first machine found.
+                assignment[idx] = machine_idxes[0] + 1
+                completion_time[machine_idxes[0]] += process_time[job - 1]
+                assignment_per_machine[machine_idxes[0]].append(job)
+                continue
 
-        # Now every machine has at least one job in queue.
-        if time_count == 1:
-            # Do assignment & update completion time.
-            assignment[idx] = machine_idxes[0] + 1
-            last_job = assignment_per_machine[machine_idxes[0]][-1]
-            completion_time[machine_idxes[0]] += process_time[job - 1] + setup_time[last_job, job]
-            assignment_per_machine[machine_idxes[0]].append(job)
-        else:
-            # Compare setup time.
-            min_setup_time_machine_idxes, setup_time_count, min_setup_time = find_min_setup_time(job, setup_time,
-                                                                                                 machine_idxes,
-                                                                                                 assignment_per_machine)
-            setup_time_machine_id = min_setup_time_machine_idxes[0]
-            assignment[idx] = setup_time_machine_id + 1
-            completion_time[setup_time_machine_id] += process_time[job - 1] + min_setup_time
-            assignment_per_machine[setup_time_machine_id].append(job)
+            # Now every machine has at least one job in queue.
+            if time_count == 1:
+                # Do assignment & update completion time.
+                assignment[idx] = machine_idxes[0] + 1
+                last_job = assignment_per_machine[machine_idxes[0]][-1]
+                completion_time[machine_idxes[0]] += process_time[job - 1] + setup_time[last_job, job]
+                assignment_per_machine[machine_idxes[0]].append(job)
+            else:
+                # Compare setup time.
+                min_setup_time_machine_idxes, setup_time_count, min_setup_time = find_min_setup_time(job, setup_time,
+                                                                                                     machine_idxes,
+                                                                                                     assignment_per_machine)
+                setup_time_machine_id = min_setup_time_machine_idxes[0]
+                assignment[idx] = setup_time_machine_id + 1
+                completion_time[setup_time_machine_id] += process_time[job - 1] + min_setup_time
+                assignment_per_machine[setup_time_machine_id].append(job)
+    else:
+        assignment = np.array([np.random.randint(1, num_machines + 1) for _ in range(num_jobs)], dtype=int)
     chromosome = np.array([permutation, assignment], dtype=int)
     return chromosome, assignment_per_machine, completion_time
