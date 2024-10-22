@@ -23,7 +23,7 @@ MUTATION_RATE_BIT = 0.2
 # 主遗传算法循环
 # 以最小化 makespan 为目标函数
 # TODO: 没有考虑各机器的负载均衡
-def GA(num_jobs, num_machines):  # 工件加工顺序是否为无序
+def GA(num_jobs, num_machines, mode):  # 工件加工顺序是否为无序
     process_time, setup_time = get_setup_process_time(num_jobs)
 
     chromosome, _, _ = chromosome_initialize(num_jobs, num_machines, process_time, setup_time)
@@ -31,12 +31,13 @@ def GA(num_jobs, num_machines):  # 工件加工顺序是否为无序
 
     # "makespan" 是指完成整个生产作业或生产订单所需的总时间，通常以单位时间（例如小时或分钟）来衡量。
     best_makespan = fitness(chromosome, process_time, setup_time, num_machines)  # 获得最佳个体的适应度值
+    print(1 / best_makespan)
     # 创建一个空列表来存储每代的适应度值
     # fitness_history = [best_makespan]
     fitness_history = []
     makespan_history = []
 
-    pop = get_init_pop(POP_SIZE, process_time, num_jobs, num_machines, setup_time)
+    pop = get_init_pop(POP_SIZE, process_time, num_jobs, num_machines, setup_time, mode=mode)
     for loop in range(1, MAX_GEN + 1):
         pop = selection(pop, POP_SIZE, process_time, setup_time, num_machines)  # 选择
         new_population = []
@@ -63,6 +64,9 @@ def GA(num_jobs, num_machines):  # 工件加工顺序是否为无序
         makespan_history.append(1 / best_makespan)
         if (loop % 20) == 0:
             print(f"In {loop}")
+            fitness_all = [1 / fitness(job, process_time, setup_time, num_machines) for job in pop]
+            print(fitness_all[:10])
+            print(min(fitness_all))
 
     print(fitness_history[:10])
     # 绘制迭代曲线图
@@ -133,10 +137,10 @@ def plot_gantt(job, machine_nums):
 
 
 if __name__ == '__main__':
-    num_job = 40
-    num_machine = 10
+    num_job = 80
+    num_machine = 15
 
-    best_jobs, best_makespans, process_time, setup_time = GA(num_job, num_machine)
+    best_jobs, best_makespans, process_time, setup_time = GA(num_job, num_machine, mode='plain')
 
     print("最佳调度分配：\n", best_jobs)
     print("最小 makespan：", 1 / best_makespans)

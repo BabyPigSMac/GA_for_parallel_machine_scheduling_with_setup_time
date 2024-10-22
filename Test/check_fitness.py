@@ -9,3 +9,4 @@ if __name__ == '__main__':
                                                                                 process_time, setup_time)
     fitness_value = fitness(chromosome, process_time, setup_time, num_machines)
     print(fitness_value)
+    print(1 / fitness_value)
