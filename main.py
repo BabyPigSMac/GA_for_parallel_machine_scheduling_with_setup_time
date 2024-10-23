@@ -10,6 +10,7 @@ from src.pop_selection.selection import selection
 from src.pop_crossover.crossover import crossover
 from src.pop_mutation.mutation_bit import mutation_bit
 from src.pop_mutation.mutation_swap import mutation_swap
+from src.plot_gantt.plot_gantt_chart import plot_gantt_chart
 
 
 # 定义遗传算法参数
@@ -23,20 +24,24 @@ MUTATION_RATE_BIT = 0.2
 # 主遗传算法循环
 # 以最小化 makespan 为目标函数
 # TODO: 没有考虑各机器的负载均衡
-def GA(num_jobs, num_machines, mode):  # 工件加工顺序是否为无序
+def GA(num_jobs, num_machines, mode):
+    """
+    :param num_jobs: <int>.
+    :param num_machines: <int>.
+    :param mode: <str>, 'greedy' or 'plain'. If 'greedy', do greedy assignment. Otherwise, assign machines randomly.
+    :return:
+    """
     process_time, setup_time = get_setup_process_time(num_jobs)
 
     chromosome, _, _ = chromosome_initialize(num_jobs, num_machines, process_time, setup_time)
-    best_job = chromosome[1]  # 获得最佳个体
+    best_job = chromosome[1]  # Init any chromosome to get one init best_fitness.
 
     # "makespan" 是指完成整个生产作业或生产订单所需的总时间，通常以单位时间（例如小时或分钟）来衡量。
-    best_makespan = fitness(chromosome, process_time, setup_time, num_machines)  # 获得最佳个体的适应度值
-    print(1 / best_makespan)
-    # 创建一个空列表来存储每代的适应度值
-    # fitness_history = [best_makespan]
+    best_makespan = fitness(chromosome, process_time, setup_time, num_machines)  # Set an init best_fitness.
+
+    # The GA.
     fitness_history = []
     makespan_history = []
-
     pop = get_init_pop(POP_SIZE, process_time, num_jobs, num_machines, setup_time, mode=mode)
     for loop in range(1, MAX_GEN + 1):
         pop = selection(pop, POP_SIZE, process_time, setup_time, num_machines)  # 选择
@@ -64,84 +69,32 @@ def GA(num_jobs, num_machines, mode):  # 工件加工顺序是否为无序
         makespan_history.append(1 / best_makespan)
         if (loop % 20) == 0:
             print(f"In {loop}")
-            fitness_all = [1 / fitness(job, process_time, setup_time, num_machines) for job in pop]
-            print(fitness_all[:10])
-            print(min(fitness_all))
+            # fitness_all = [1 / fitness(job, process_time, setup_time, num_machines) for job in pop]
 
-    print(fitness_history[:10])
     # 绘制迭代曲线图
     plt.plot(range(MAX_GEN), fitness_history)
-    plt.xlabel('Generation')
-    plt.ylabel('Fitness Value')
+    plt.xlabel('Iteration')
+    plt.ylabel('Fitness')
     plt.title('Genetic Algorithm Convergence')
     plt.show()
 
-    return best_job, best_makespan, process_time, setup_time
-
-
-def plot_gantt(job, machine_nums):
-    # 准备一系列颜色
-    colors = ['blue', 'yellow', 'orange', 'green', 'palegoldenrod', 'purple', 'pink', 'Thistle', 'Magenta', 'SlateBlue',
-              'RoyalBlue', 'Cyan', 'Aqua', 'floralwhite', 'ghostwhite', 'goldenrod', 'mediumslateblue', 'navajowhite',
-              'moccasin', 'white', 'navy', 'sandybrown', 'moccasin']
-    job_colors = random.sample(colors, len(job))
-    # 计算每个工件的开始时间和结束时间
-    start_time = [[] for _ in range(machine_nums)]
-    end_time = [[] for _ in range(machine_nums)]
-    id = [[] for _ in range(machine_nums)]
-    job_color = [[] for _ in range(machine_nums)]
-
-    job_id = job[0]
-
-    for i in range(len(job)):
-        if start_time[job[i]]:
-            start_time[job[i]].append(max(end_time[job[i]][-1], arr_times[job_id[i]]))
-            end_time[job[i]].append(start_time[job[i]][-1] + pro_times[job_id[i]])
-        else:
-            start_time[job[i]].append(arr_times[job_id[i]])
-            end_time[job[i]].append(start_time[job[i]][-1] + pro_times[job_id[i]])
-        id[job[i]].append(job_id[i])
-        job_color[job[i]].append(job_colors[job_id[i]])
-
-    # 创建图表和子图
-    plt.figure(figsize=(12, 6))
-
-    # 绘制工序的甘特图
-    for i in range(len(start_time)):
-        for j in range(len(start_time[i])):
-            plt.barh(i, end_time[i][j] - start_time[i][j], height=0.5, left=start_time[i][j], color=job_color[i][j],
-                     edgecolor='black')
-            plt.text(x=(start_time[i][j] + end_time[i][j]) / 2, y=i, s=id[i][j], fontsize=14)
-
-    # 设置纵坐标轴刻度为机器编号
-    machines = [f'Machine {i}' for i in range(len(start_time))]
-    plt.yticks(range(len(machines)), machines)
-
-    # 设置横坐标轴刻度为时间
-    # start = min([min(row) for row in start_time])
-    start = 0
-    end = max([max(row) for row in end_time])
-    plt.xticks(range(start, end + 1))
-    plt.xlabel('Time')
-
-    # 图表样式设置
-    plt.ylabel('Machines')
-    plt.title('Gantt Chart')
-    # plt.grid(axis='x')
-
-    # 自动调整图表布局
-    plt.tight_layout()
-
-    # 显示图表
+    plt.plot(range(MAX_GEN), makespan_history)
+    plt.xlabel('Iteration')
+    plt.ylabel('Makespan')
+    plt.title('Genetic Algorithm Convergence')
     plt.show()
+
+    # Plot Gantt chart.
+    plot_gantt_chart(best_job, num_machine, process_time, setup_time)
+
+    return best_job, best_makespan
 
 
 if __name__ == '__main__':
     num_job = 80
     num_machine = 15
 
-    best_jobs, best_makespans, process_time, setup_time = GA(num_job, num_machine, mode='plain')
+    best_jobs, best_makespans = GA(num_job, num_machine, mode='greedy')
 
     print("最佳调度分配：\n", best_jobs)
-    print("最小 makespan：", 1 / best_makespans)
-    # plot_gantt(best_jobs, process_time, setup_time)
+    print("Min makespan：", 1 / best_makespans)
