@@ -72,16 +72,18 @@ def GA(num_jobs, num_machines, mode):
             # fitness_all = [1 / fitness(job, process_time, setup_time, num_machines) for job in pop]
 
     # 绘制迭代曲线图
-    plt.plot(range(MAX_GEN), fitness_history)
+    plt.plot(range(MAX_GEN), [-fitness_value for fitness_value in fitness_history])
     plt.xlabel('Iteration')
     plt.ylabel('Fitness')
     plt.title('Genetic Algorithm Convergence')
+    plt.tight_layout()
     plt.show()
 
     plt.plot(range(MAX_GEN), makespan_history)
     plt.xlabel('Iteration')
     plt.ylabel('Makespan')
     plt.title('Genetic Algorithm Convergence')
+    plt.tight_layout()
     plt.show()
 
     # Plot Gantt chart.
@@ -94,7 +96,7 @@ if __name__ == '__main__':
     num_job = 80
     num_machine = 15
 
-    best_jobs, best_makespans = GA(num_job, num_machine, mode='greedy')
+    best_jobs, best_makespans = GA(num_job, num_machine, mode='plain')
 
     print("最佳调度分配：\n", best_jobs)
     print("Min makespan：", 1 / best_makespans)
